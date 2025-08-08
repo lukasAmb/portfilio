@@ -1,10 +1,15 @@
+// =========================
 // Supabase credentials
+// =========================
+const { createClient } = supabase;
 const SUPABASE_URL = 'https://zazmvrzfwsrhvhekwixp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inphem12cnpmd3NyaHZoZWt3aXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1OTE3NTksImV4cCI6MjA3MDE2Nzc1OX0.N4W4dBROpsHf1cn3-FQKhCGWEAZ8VzCSp28XTl_gXmg';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// =========================
 // Elements
+// =========================
 const projectsDiv = document.getElementById('projects');
 const projectsSection = document.getElementById('projects-section');
 const loginSection = document.getElementById('login-section');
@@ -16,9 +21,12 @@ const adminForm = document.getElementById('admin-form');
 const adminLoginBtn = document.getElementById('admin-login-btn');
 const cancelLoginBtn = document.getElementById('cancel-login');
 
+// =========================
+// Load projects
+// =========================
 async function loadProjects() {
   projectsDiv.innerHTML = 'Loading projects...';
-  const { data: projects, error } = await supabase
+  const { data: projects, error } = await supabaseClient
     .from('projects')
     .select('*')
     .order('created_at', { ascending: false });
@@ -50,18 +58,18 @@ async function loadProjects() {
   });
 }
 
-// Check user session and show/hide sections accordingly
+// =========================
+// Check logged-in user
+// =========================
 async function checkUser() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabaseClient.auth.getUser();
 
   if (user) {
-    // Logged in: show admin upload, hide others
     loginSection.style.display = 'none';
     projectsSection.style.display = 'none';
     adminSection.style.display = 'block';
     adminLoginBtn.style.display = 'none';
   } else {
-    // Logged out: show projects + login button, hide admin upload & login form
     adminSection.style.display = 'none';
     loginSection.style.display = 'none';
     projectsSection.style.display = 'block';
@@ -69,7 +77,9 @@ async function checkUser() {
   }
 }
 
+// =========================
 // Show login form
+// =========================
 function showLogin() {
   loginError.textContent = '';
   loginSection.style.display = 'block';
@@ -78,7 +88,7 @@ function showLogin() {
   adminLoginBtn.style.display = 'none';
 }
 
-// Show projects + login button
+// Show projects
 function showProjects() {
   loginSection.style.display = 'none';
   adminSection.style.display = 'none';
@@ -86,7 +96,9 @@ function showProjects() {
   adminLoginBtn.style.display = 'block';
 }
 
+// =========================
 // Login form submit
+// =========================
 loginForm.addEventListener('submit', async e => {
   e.preventDefault();
   loginError.textContent = '';
@@ -94,7 +106,7 @@ loginForm.addEventListener('submit', async e => {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value.trim();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
   if (error) {
     loginError.textContent = 'Login failed: ' + error.message;
@@ -107,7 +119,7 @@ loginForm.addEventListener('submit', async e => {
 
 // Logout button
 logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   showProjects();
   loadProjects();
 });
@@ -122,7 +134,9 @@ cancelLoginBtn.addEventListener('click', () => {
   showProjects();
 });
 
+// =========================
 // Admin form submit (upload project)
+// =========================
 adminForm.addEventListener('submit', async e => {
   e.preventDefault();
 
@@ -136,12 +150,12 @@ adminForm.addEventListener('submit', async e => {
     return;
   }
 
-  // Upload image to Supabase Storage
+  // Upload image
   const fileExt = imageFile.name.split('.').pop();
   const fileName = `${Date.now()}.${fileExt}`;
   const filePath = `${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabaseClient.storage
     .from('project-images')
     .upload(filePath, imageFile);
 
@@ -150,8 +164,8 @@ adminForm.addEventListener('submit', async e => {
     return;
   }
 
-  // Get public URL of uploaded image
-  const { data: { publicUrl }, error: urlError } = supabase.storage
+  // Get public URL
+  const { data: publicUrlData, error: urlError } = supabaseClient.storage
     .from('project-images')
     .getPublicUrl(filePath);
 
@@ -160,14 +174,14 @@ adminForm.addEventListener('submit', async e => {
     return;
   }
 
-  // Insert project into database
-  const { error: insertError } = await supabase
+  // Save project to DB
+  const { error: insertError } = await supabaseClient
     .from('projects')
     .insert({
       title,
       description,
       link,
-      image_url: publicUrl
+      image_url: publicUrlData.publicUrl
     });
 
   if (insertError) {
@@ -175,12 +189,14 @@ adminForm.addEventListener('submit', async e => {
     return;
   }
 
-  // Reset form and reload projects
+  // Reset form & reload
   adminForm.reset();
   loadProjects();
 });
 
+// =========================
 // Init
+// =========================
 (async () => {
   await checkUser();
   await loadProjects();
