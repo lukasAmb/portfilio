@@ -1,3 +1,4 @@
+/* General Page Styles */
 body {
   background-color: #1e1e2f;
   color: #f0f0f0;
@@ -15,10 +16,12 @@ body {
   position: relative;
 }
 
+/* Headings */
 h1, h2 {
   color: white;
 }
 
+/* Project List Layout */
 .projects {
   display: flex;
   flex-direction: column;
@@ -70,6 +73,7 @@ h1, h2 {
   background-color: #8e44ad;
 }
 
+/* Forms */
 form {
   margin-top: 20px;
   display: flex;
@@ -97,4 +101,32 @@ button {
 
 button:hover {
   background-color: #8e44ad;
+}
+
+/* Utility Buttons */
+.admin-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #9b59b6;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.cancel-btn {
+  background: #555;
+}
+
+.logout-btn {
+  background-color: #c0392b;
+}
+
+/* Error Text */
+.error {
+  color: #f44336;
+  margin-top: 10px;
 }
