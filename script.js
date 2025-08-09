@@ -1,3 +1,21 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const adminLoginBtn = document.getElementById("admin-login-btn");
+  const loginSection = document.getElementById("login-section");
+  const projectsSection = document.getElementById("projects-section");
+  const cancelLoginBtn = document.getElementById("cancel-login");
+
+  // Show login section when "Admin Login" clicked
+  adminLoginBtn.addEventListener("click", () => {
+    projectsSection.style.display = "none";
+    loginSection.style.display = "block";
+  });
+
+  // Cancel login → back to portfolio
+  cancelLoginBtn.addEventListener("click", () => {
+    loginSection.style.display = "none";
+    projectsSection.style.display = "block";
+  });
+});
 // =============================
 // Supabase Init
 // =============================
