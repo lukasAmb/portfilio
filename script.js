@@ -1,227 +1,136 @@
-// ===== Supabase config =====
-const SUPABASE_URL = 'https://zazmvrzfwsrhvhekwixp.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inphem12cnpmd3NyaHZoZWt3aXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1OTE3NTksImV4cCI6MjA3MDE2Nzc1OX0.N4W4dBROpsHf1cn3-FQKhCGWEAZ8VzCSp28XTl_gXmg';
+// ======= CONFIGURE YOUR SUPABASE =======
+const SUPABASE_URL = "https://YOUR-PROJECT-URL.supabase.co";
+const SUPABASE_KEY = "YOUR-ANON-KEY"; // Use anon public key
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Use the global supabase object provided by the CDN, create a client
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ======= DOM ELEMENTS =======
+const projectsDiv = document.getElementById("projects");
+const adminLoginBtn = document.getElementById("admin-login-btn");
+const loginSection = document.getElementById("login-section");
+const loginForm = document.getElementById("login-form");
+const loginError = document.getElementById("login-error");
+const cancelLoginBtn = document.getElementById("cancel-login");
 
-// Admin username convenience (you can change)
-const ADMIN_USERNAME = 'ambrizas';
-const ADMIN_EMAIL_SUFFIX = '@example.com'; // username -> username@example.com
+const adminSection = document.getElementById("admin-section");
+const adminForm = document.getElementById("admin-form");
+const logoutBtn = document.getElementById("logout-btn");
 
-// ===== Elements =====
-const projectsDiv = document.getElementById('projects');
-const projectsSection = document.getElementById('projects-section');
-const loginSection = document.getElementById('login-section');
-const adminSection = document.getElementById('admin-section');
-const loginForm = document.getElementById('login-form');
-const loginError = document.getElementById('login-error');
-const logoutBtn = document.getElementById('logout-btn');
-const adminForm = document.getElementById('admin-form');
-const adminLoginBtn = document.getElementById('admin-login-btn');
-const cancelLoginBtn = document.getElementById('cancel-login');
-
-// ===== Load projects =====
+// ======= LOAD PROJECTS =======
 async function loadProjects() {
-  projectsDiv.innerHTML = 'Loading projects...';
-  const { data: projects, error } = await supabaseClient
-    .from('projects')
-    .select('*')
-    .order('created_at', { ascending: false });
+  projectsDiv.innerHTML = "<p>Loading projects...</p>";
+
+  const { data, error } = await supabaseClient
+    .from("projects")
+    .select("*")
+    .order("id", { ascending: false });
 
   if (error) {
-    console.error('Error loading projects:', error);
-    projectsDiv.innerHTML = 'Failed to load projects.';
+    console.error(error);
+    projectsDiv.innerHTML = "<p>Error loading projects.</p>";
     return;
   }
 
-  if (!projects || projects.length === 0) {
-    projectsDiv.innerHTML = 'No projects yet.';
+  if (data.length === 0) {
+    projectsDiv.innerHTML = "<p>No projects yet.</p>";
     return;
   }
 
-  projectsDiv.innerHTML = '';
-  projects.forEach(proj => {
-    const div = document.createElement('div');
-    div.className = 'project';
-    div.innerHTML = `
-      <img src="${proj.image_url}" alt="${proj.title}" />
+  projectsDiv.innerHTML = "";
+  data.forEach(project => {
+    const projectEl = document.createElement("div");
+    projectEl.classList.add("project");
+
+    projectEl.innerHTML = `
+      <img src="${project.image_url}" alt="${project.title}" />
       <div class="project-info">
-        <h3>${escapeHtml(proj.title)}</h3>
-        <p>${escapeHtml(proj.description)}</p>
-        <a href="${escapeAttr(proj.link)}" target="_blank" rel="noopener">View Project</a>
+        <h3>${project.title}</h3>
+        <p>${project.description}</p>
+        <a href="${project.link}" target="_blank">View Project</a>
       </div>
     `;
-    projectsDiv.appendChild(div);
+    projectsDiv.appendChild(projectEl);
   });
 }
 
-// Small helpers to avoid naive HTML injection if inputs are weird
-function escapeHtml(str = '') {
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
-}
-function escapeAttr(str = '') {
-  return String(str).replaceAll('"', '&quot;');
-}
+// ======= SHOW LOGIN FORM =======
+adminLoginBtn.addEventListener("click", () => {
+  loginSection.style.display = "block";
+});
 
-// ===== Auth & UI control =====
-async function checkUser() {
-  const { data } = await supabaseClient.auth.getUser();
-  const user = data?.user ?? null;
+// ======= CANCEL LOGIN =======
+cancelLoginBtn.addEventListener("click", () => {
+  loginSection.style.display = "none";
+  loginError.textContent = "";
+});
 
-  if (user) {
-    // Logged in
-    loginSection.style.display = 'none';
-    projectsSection.style.display = 'none';
-    adminSection.style.display = 'block';
-    adminLoginBtn.style.display = 'none';
-  } else {
-    // Logged out
-    adminSection.style.display = 'none';
-    loginSection.style.display = 'none';
-    projectsSection.style.display = 'block';
-    adminLoginBtn.style.display = 'block';
-  }
-}
-
-function showLogin() {
-  loginError.textContent = '';
-  loginSection.style.display = 'block';
-  projectsSection.style.display = 'none';
-  adminSection.style.display = 'none';
-  adminLoginBtn.style.display = 'none';
-}
-function showProjects() {
-  loginSection.style.display = 'none';
-  adminSection.style.display = 'none';
-  projectsSection.style.display = 'block';
-  adminLoginBtn.style.display = 'block';
-}
-
-// ===== Login handler (accepts "ambrizas" or full email) =====
-loginForm.addEventListener('submit', async (e) => {
+// ======= LOGIN ADMIN =======
+loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  loginError.textContent = '';
 
-  let emailInput = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value.trim();
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
 
-  if (!emailInput || !password) {
-    loginError.textContent = 'Enter username/email and password.';
-    return;
-  }
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
 
-  // If user typed a short username (no @), convert to email
-  if (!emailInput.includes('@')) {
-    emailInput = `${emailInput}${ADMIN_EMAIL_SUFFIX}`;
-  }
-
-  // Try sign in
-  let { error } = await supabaseClient.auth.signInWithPassword({ email: emailInput, password });
-
-  // If sign-in failed and the input is the admin username's email, try to auto-create (helpful first-time)
   if (error) {
-    // Only auto-create for the admin account (prevents open signups via this fallback)
-    if (emailInput.toLowerCase() === `${ADMIN_USERNAME}${ADMIN_EMAIL_SUFFIX}`) {
-      const { error: signUpError } = await supabaseClient.auth.signUp({ email: emailInput, password });
-      if (signUpError) {
-        loginError.textContent = 'Login failed: ' + signUpError.message;
-        return;
-      }
-      // After signup, sign in
-      const { error: signInAfter } = await supabaseClient.auth.signInWithPassword({ email: emailInput, password });
-      if (signInAfter) {
-        loginError.textContent = 'Login failed after signup: ' + signInAfter.message;
-        return;
-      }
-    } else {
-      loginError.textContent = 'Login failed: ' + error.message;
-      return;
-    }
+    loginError.textContent = "Login failed. Check your credentials.";
+    return;
   }
 
-  // Success
-  await checkUser();
-  await loadProjects();
+  loginSection.style.display = "none";
+  adminSection.style.display = "block";
+  adminLoginBtn.style.display = "none";
 });
 
-// ===== Logout =====
-logoutBtn.addEventListener('click', async () => {
+// ======= LOGOUT ADMIN =======
+logoutBtn.addEventListener("click", async () => {
   await supabaseClient.auth.signOut();
-  showProjects();
-  await loadProjects();
+  adminSection.style.display = "none";
+  adminLoginBtn.style.display = "block";
 });
 
-// ===== Admin / Cancel buttons =====
-adminLoginBtn.addEventListener('click', () => showLogin());
-cancelLoginBtn.addEventListener('click', () => showProjects());
-
-// ===== Admin upload form =====
-adminForm.addEventListener('submit', async (e) => {
+// ======= UPLOAD PROJECT =======
+adminForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const title = document.getElementById('title').value.trim();
-  const description = document.getElementById('description').value.trim();
-  const link = document.getElementById('link').value.trim();
-  const imageFile = document.getElementById('image').files[0];
+  const title = document.getElementById("title").value;
+  const description = document.getElementById("description").value;
+  const link = document.getElementById("link").value;
+  const imageFile = document.getElementById("image").files[0];
 
-  if (!title || !description || !link || !imageFile) {
-    alert('Please fill all fields and select an image.');
+  // Upload image to storage
+  const filePath = `${Date.now()}_${imageFile.name}`;
+  const { data: imgData, error: imgError } = await supabaseClient
+    .storage
+    .from("project-images")
+    .upload(filePath, imageFile);
+
+  if (imgError) {
+    alert("Image upload failed.");
+    console.error(imgError);
     return;
   }
 
-  // Upload image to Storage
-  const fileExt = imageFile.name.split('.').pop();
-  const fileName = `${Date.now()}.${fileExt}`;
-  const filePath = fileName;
+  const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/project-images/${filePath}`;
 
-  const { data: uploadData, error: uploadError } = await supabaseClient.storage
-    .from('project-images')
-    .upload(filePath, imageFile, { cacheControl: '3600', upsert: false });
+  // Insert into database
+  const { error } = await supabaseClient
+    .from("projects")
+    .insert([{ title, description, link, image_url: imageUrl }]);
 
-  if (uploadError) {
-    alert('Error uploading image: ' + uploadError.message);
+  if (error) {
+    alert("Project upload failed.");
+    console.error(error);
     return;
   }
 
-  // Get public URL
-  const { data: publicUrlData, error: urlError } = supabaseClient.storage
-    .from('project-images')
-    .getPublicUrl(filePath);
-
-  if (urlError) {
-    alert('Error getting image URL: ' + urlError.message);
-    return;
-  }
-
-  const publicUrl = publicUrlData.publicUrl;
-
-  // Insert project into DB
-  const { error: insertError } = await supabaseClient
-    .from('projects')
-    .insert([{
-      title,
-      description,
-      link,
-      image_url: publicUrl
-    }]);
-
-  if (insertError) {
-    alert('Error saving project: ' + insertError.message);
-    return;
-  }
-
-  // Reset & reload
+  alert("Project uploaded!");
   adminForm.reset();
-  await loadProjects();
-  alert('Project uploaded!');
+  loadProjects();
 });
 
-// ===== Init =====
-(async () => {
-  await checkUser();
-  await loadProjects();
-})();
+// ======= ON PAGE LOAD =======
+loadProjects();
