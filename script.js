@@ -1,74 +1,67 @@
-// ======= CONFIGURE YOUR SUPABASE =======
-const SUPABASE_URL = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inphem12cnpmd3NyaHZoZWt3aXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1OTE3NTksImV4cCI6MjA3MDE2Nzc1OX0.N4W4dBROpsHf1cn3-FQKhCGWEAZ8VzCSp28XTl_gXmg";
-const SUPABASE_KEY = "https://zazmvrzfwsrhvhekwixp.supabase.co"; // Use anon public key
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// =============================
+// Supabase Init
+// =============================
+const SUPABASE_URL = 'https://zazmvrzfwsrhvhekwixp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inphem12cnpmd3NyaHZoZWt3aXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1OTE3NTksImV4cCI6MjA3MDE2Nzc1OX0.N4W4dBROpsHf1cn3-FQKhCGWEAZ8VzCSp28XTl_gXmg';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ======= DOM ELEMENTS =======
-const projectsDiv = document.getElementById("projects");
-const adminLoginBtn = document.getElementById("admin-login-btn");
-const loginSection = document.getElementById("login-section");
-const loginForm = document.getElementById("login-form");
-const loginError = document.getElementById("login-error");
-const cancelLoginBtn = document.getElementById("cancel-login");
+// =============================
+// DOM Elements
+// =============================
+const projectsContainer = document.getElementById('projects');
+const adminLoginBtn = document.getElementById('admin-login-btn');
+const loginSection = document.getElementById('login-section');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const cancelLoginBtn = document.getElementById('cancel-login');
+const adminSection = document.getElementById('admin-section');
+const adminForm = document.getElementById('admin-form');
+const logoutBtn = document.getElementById('logout-btn');
 
-const adminSection = document.getElementById("admin-section");
-const adminForm = document.getElementById("admin-form");
-const logoutBtn = document.getElementById("logout-btn");
-
-// ======= LOAD PROJECTS =======
+// =============================
+// Show all projects
+// =============================
 async function loadProjects() {
-  projectsDiv.innerHTML = "<p>Loading projects...</p>";
-
-  const { data, error } = await supabaseClient
-    .from("projects")
-    .select("*")
-    .order("id", { ascending: false });
-
+  projectsContainer.innerHTML = 'Loading...';
+  const { data, error } = await supabaseClient.from('projects').select('*');
   if (error) {
+    projectsContainer.innerHTML = 'Error loading projects';
     console.error(error);
-    projectsDiv.innerHTML = "<p>Error loading projects.</p>";
     return;
   }
-
-  if (data.length === 0) {
-    projectsDiv.innerHTML = "<p>No projects yet.</p>";
-    return;
-  }
-
-  projectsDiv.innerHTML = "";
-  data.forEach(project => {
-    const projectEl = document.createElement("div");
-    projectEl.classList.add("project");
-
-    projectEl.innerHTML = `
-      <img src="${project.image_url}" alt="${project.title}" />
-      <div class="project-info">
-        <h3>${project.title}</h3>
-        <p>${project.description}</p>
-        <a href="${project.link}" target="_blank">View Project</a>
-      </div>
+  projectsContainer.innerHTML = '';
+  data.forEach(proj => {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.innerHTML = `
+      <img src="${proj.image_url}" alt="${proj.title}">
+      <h3>${proj.title}</h3>
+      <p>${proj.description}</p>
+      <a href="${proj.link}" target="_blank">View Project</a>
     `;
-    projectsDiv.appendChild(projectEl);
+    projectsContainer.appendChild(card);
   });
 }
 
-// ======= SHOW LOGIN FORM =======
-adminLoginBtn.addEventListener("click", () => {
-  loginSection.style.display = "block";
+// =============================
+// Event Listeners
+// =============================
+adminLoginBtn.addEventListener('click', () => {
+  loginSection.style.display = 'block';
+  document.getElementById('projects-section').style.display = 'none';
 });
 
-// ======= CANCEL LOGIN =======
-cancelLoginBtn.addEventListener("click", () => {
-  loginSection.style.display = "none";
-  loginError.textContent = "";
+cancelLoginBtn.addEventListener('click', () => {
+  loginSection.style.display = 'none';
+  document.getElementById('projects-section').style.display = 'block';
 });
 
-// ======= LOGIN ADMIN =======
-loginForm.addEventListener("submit", async (e) => {
+loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  const email = document.getElementById("login-email").value;
-  const password = document.getElementById("login-password").value;
+  loginError.textContent = '';
+  
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({
     email,
@@ -76,61 +69,60 @@ loginForm.addEventListener("submit", async (e) => {
   });
 
   if (error) {
-    loginError.textContent = "Login failed. Check your credentials.";
+    loginError.textContent = error.message;
     return;
   }
-
-  loginSection.style.display = "none";
-  adminSection.style.display = "block";
-  adminLoginBtn.style.display = "none";
+  
+  loginSection.style.display = 'none';
+  adminSection.style.display = 'block';
 });
 
-// ======= LOGOUT ADMIN =======
-logoutBtn.addEventListener("click", async () => {
+logoutBtn.addEventListener('click', async () => {
   await supabaseClient.auth.signOut();
-  adminSection.style.display = "none";
-  adminLoginBtn.style.display = "block";
+  adminSection.style.display = 'none';
+  document.getElementById('projects-section').style.display = 'block';
 });
 
-// ======= UPLOAD PROJECT =======
-adminForm.addEventListener("submit", async (e) => {
+// =============================
+// Handle Admin Upload
+// =============================
+adminForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  const title = document.getElementById("title").value;
-  const description = document.getElementById("description").value;
-  const link = document.getElementById("link").value;
-  const imageFile = document.getElementById("image").files[0];
+  
+  const title = document.getElementById('title').value;
+  const description = document.getElementById('description').value;
+  const link = document.getElementById('link').value;
+  const imageFile = document.getElementById('image').files[0];
 
   // Upload image to storage
-  const filePath = `${Date.now()}_${imageFile.name}`;
   const { data: imgData, error: imgError } = await supabaseClient
     .storage
-    .from("project-images")
-    .upload(filePath, imageFile);
+    .from('images')
+    .upload(`projects/${Date.now()}_${imageFile.name}`, imageFile);
 
   if (imgError) {
-    alert("Image upload failed.");
     console.error(imgError);
     return;
   }
 
-  const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/project-images/${filePath}`;
+  const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/images/${imgData.path}`;
 
   // Insert into database
-  const { error } = await supabaseClient
-    .from("projects")
-    .insert([{ title, description, link, image_url: imageUrl }]);
+  const { error: dbError } = await supabaseClient.from('projects').insert([
+    { title, description, link, image_url: imageUrl }
+  ]);
 
-  if (error) {
-    alert("Project upload failed.");
-    console.error(error);
+  if (dbError) {
+    console.error(dbError);
     return;
   }
 
-  alert("Project uploaded!");
+  alert('Project uploaded!');
   adminForm.reset();
   loadProjects();
 });
 
-// ======= ON PAGE LOAD =======
+// =============================
+// Init
+// =============================
 loadProjects();
