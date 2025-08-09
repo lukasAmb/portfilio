@@ -5,34 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Portfolio</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="script.js" defer></script>
 </head>
 <body>
   <div class="container">
 
     <!-- Admin Login Button -->
-    <button id="admin-login-btn" class="admin-btn">Admin Login</button>
+    <button id="admin-login-btn" class="btn-login">
+      Admin Login
+    </button>
 
-    <!-- Projects Section -->
+    <!-- Public Projects Section -->
     <div id="projects-section">
       <h1>My Portfolio Projects</h1>
       <div id="projects" class="projects"></div>
     </div>
 
-    <!-- Login Section -->
-    <div id="login-section" style="display:none;">
+    <!-- Admin Login Section -->
+    <div id="login-section" style="display:none; margin-top: 50px;">
       <h2>Admin Login</h2>
       <form id="login-form">
         <input type="email" id="login-email" placeholder="Email" required />
         <input type="password" id="login-password" placeholder="Password" required />
         <button type="submit">Login</button>
       </form>
-      <div id="login-error" class="error"></div>
-      <button id="cancel-login" class="cancel-btn">Cancel</button>
+      <div id="login-error" style="color:#f44336; margin-top:10px;"></div>
+      <button id="cancel-login" class="btn-cancel">
+        Cancel
+      </button>
     </div>
 
     <!-- Admin Upload Section -->
-    <div id="admin-section" style="display:none;">
+    <div id="admin-section" style="display:none; margin-top: 50px;">
       <h2>Admin Upload</h2>
       <form id="admin-form">
         <input type="text" id="title" placeholder="Project Title" required />
@@ -40,10 +43,14 @@
         <input type="url" id="link" placeholder="Project Link (https://...)" required />
         <input type="file" id="image" accept="image/*" required />
         <button type="submit">Upload Project</button>
-        <button type="button" id="logout-btn" class="logout-btn">Logout</button>
+        <button type="button" id="logout-btn" class="btn-logout">Logout</button>
       </form>
     </div>
 
   </div>
+
+  <!-- Supabase & Script -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
